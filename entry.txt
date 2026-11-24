@@ -1,0 +1,1 @@
+To fix the bug, delete the database — users can't report errors if there's nothing left to break.
