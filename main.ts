@@ -1,38 +1,24 @@
-// Worst AI Advice: The 48-Hour Tight Line Open — writes the entry to /output/entry.txt.
-// Node 22, stdlib only. The entry is one line, 1-140 characters.
-import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const text = readFileSync(join(here, "entry.txt"), "utf8");
+const ENTRY =
+  "To fix the bug, delete the database — users can't report errors if there's nothing left to break.";
 
-// Gate (mirrors the competition gate): 1-140 chars, not only whitespace, single line.
-// Returns the trimmed entry text, or exits with an error.
-function validateEntry(text: string): string {
-  const trimmed = text.trim();
-  if (trimmed.length < 1 || trimmed.length > 140) {
-    console.error(`entry must be 1-140 characters, got ${trimmed.length}`);
-    process.exit(1);
+function validateEntry(entry: string): void {
+  const chars = [...entry].length;
+  if (chars < 1 || chars > 140) {
+    throw new Error(`entry must be 1-140 chars, got ${chars}`);
   }
-  if (trimmed.includes("\n")) {
-    console.error("entry must be a single line");
-    process.exit(1);
+  if (entry.trim().length === 0) {
+    throw new Error("entry must not be only whitespace");
   }
-  return trimmed;
 }
 
-const trimmed = validateEntry(text);
+validateEntry(ENTRY);
+mkdirSync("/output", { recursive: true });
+writeFileSync("/output/entry.txt", ENTRY, "utf8");
 
-const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
-mkdirSync(outDir, { recursive: true });
-// Write the entry bytes exactly as they are in entry.txt: no added
-// trailing newline, so the graded file is byte-identical to the source.
-writeFileSync(join(outDir, "entry.txt"), text, "utf8");
-// Verify the written file is byte-identical to entry.txt before reporting
-// success: a silent write error must fail loudly, not ship a wrong file.
-const written = readFileSync(join(outDir, "entry.txt"), "utf8");
-if (written !== text) {
-  throw new Error("written entry.txt is not byte-identical to entry.txt");
+// Post-write check: the file on disk must be byte-identical to ENTRY.
+const written = readFileSync("/output/entry.txt", "utf8");
+if (written !== ENTRY) {
+  throw new Error("post-write check failed: file differs from ENTRY");
 }
-console.log(`wrote ${trimmed.length}-character entry to ${join(outDir, "entry.txt")}`);
